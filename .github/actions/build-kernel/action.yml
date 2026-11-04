@@ -868,8 +868,6 @@ runs:
         }
         
         retry_clone "https://github.com/WildKernels/kernel_patches.git" "main" "1"
-        # pin kernel_patches to the Oct 16 set that last built OP12r (KSUN 9124eb1, SuSFS 2ad2973)
-        git -C kernel_patches fetch --depth 1 origin 44b23a7601b98a3c548e2584e9f294d7b8b2d19b && git -C kernel_patches checkout -q FETCH_HEAD
         
         if [ "${{ env.OP_SUSFS }}" = true ]; then
           echo "Using SUSFS branch/commit: $SUSFS_BRANCH"
