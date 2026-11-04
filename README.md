@@ -86,6 +86,38 @@ Flashing this kernel will not void your warranty, but there is always a risk of 
 
 ---
 
+## 🍴 This Fork (softpyscho) — OnePlus 12R build
+
+Everything above comes from upstream WildKernels. This fork adds the following on branch [`op12r-5.15.197`](https://github.com/softpyscho/OnePlus_KernelSU_SUSFS/tree/op12r-5.15.197), building only the **OnePlus 12R (OP12r), Android 16, kernel 5.15.197**.
+
+### ➕ Added features
+- 🧠 **MGLRU on by default**: multi-gen LRU memory reclaim, fewer app reloads under memory pressure
+- 🔀 **Kernel stack randomisation**: stack offset randomised on every syscall entry (`RANDOMIZE_KSTACK_OFFSET_DEFAULT`)
+- 💾 **NTFS3**: read/write NTFS USB drives over OTG (exFAT, FAT and F2FS were already supported)
+- 🖧 **BBRv3 as default** TCP congestion control, with **`fq`** as the default qdisc
+- ⚡ **TCP Fast Open** (client + server) and **ECN** enabled by default
+
+### 🔧 Build changes
+- 📌 **Pinned versions** as workflow defaults: KernelSU-Next `b427a3f` (33405) and SUSFS android13-5.15 `f3ceb5d` (v2.3.0). KSUN `dev` has moved past the SUSFS fix patches, so unpinned builds fail.
+- ✅ **Config check**: the build fails if any added setting is missing from the final kernel `.config`, or if the TCP defaults can't be patched.
+- 🎯 **12R only**: every other device config is removed on this branch.
+
+### 📦 Download
+- Latest: [op12r-5.15.197-r1](https://github.com/softpyscho/OnePlus_KernelSU_SUSFS/releases/tag/op12r-5.15.197-r1). The SHA256 is in the release notes.
+- Flash only if `uname -r` on your phone shows **5.15.197**, and back up your stock `boot.img` first.
+
+### 🔁 Rebuild
+Run **Build and Release OnePlus Kernels** on branch `op12r-5.15.197` with `op_model=A16`. The defaults already carry the pinned versions.
+
+### ✔️ Check after flashing
+```
+cat /proc/sys/net/ipv4/tcp_congestion_control   # bbr3
+cat /proc/sys/net/ipv4/tcp_fastopen             # 3
+cat /sys/kernel/mm/lru_gen/enabled              # not 0x0000
+```
+
+---
+
 ## 📋 Installation Instructions
 
 For GKI installation, please follow the official guide:
