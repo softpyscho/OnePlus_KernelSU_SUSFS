@@ -1808,6 +1808,7 @@ runs:
         CONFIG_NTFS3_FS=y
         CONFIG_NTFS3_LZX_XPRESS=y
         CONFIG_NTFS3_FS_POSIX_ACL=y
+        CONFIG_NET_SCH_DEFAULT=y
         CONFIG_DEFAULT_FQ=y
         EOF
         if [ "${{ env.OP_BBR3 }}" = "true" ]; then
