@@ -1794,6 +1794,33 @@ runs:
         CONFIG_TRACEPOINTS=y
         EOF
 
+    # softpyscho: low-cost extras — MGLRU on, kstack randomisation, NTFS3,
+    # BBRv3 + fq as defaults, TCP Fast Open (client+server) and ECN on.
+    - name: Add softpyscho extras
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "::group::Add softpyscho extras"
+        cd "$COMMON_KERNEL_FOLDER"
+        cat >> arch/arm64/configs/gki_defconfig <<EOF
+        CONFIG_LRU_GEN_ENABLED=y
+        CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y
+        CONFIG_NTFS3_FS=y
+        CONFIG_NTFS3_LZX_XPRESS=y
+        CONFIG_NTFS3_FS_POSIX_ACL=y
+        CONFIG_DEFAULT_FQ=y
+        EOF
+        if [ "${{ env.OP_BBR3 }}" = "true" ]; then
+          printf '%s\n' '# CONFIG_DEFAULT_CUBIC is not set' 'CONFIG_DEFAULT_BBR3=y' >> arch/arm64/configs/gki_defconfig
+        fi
+        f=net/ipv4/tcp_ipv4.c
+        grep -q 'net->ipv4.sysctl_tcp_ecn = 2;' "$f" || { echo "::error::tcp_ecn default not found in $f"; exit 1; }
+        grep -q 'net->ipv4.sysctl_tcp_fastopen = TFO_CLIENT_ENABLE;' "$f" || { echo "::error::tcp_fastopen default not found in $f"; exit 1; }
+        sed -i 's/net->ipv4.sysctl_tcp_ecn = 2;/net->ipv4.sysctl_tcp_ecn = 1;/' "$f"
+        sed -i 's/net->ipv4.sysctl_tcp_fastopen = TFO_CLIENT_ENABLE;/net->ipv4.sysctl_tcp_fastopen = TFO_CLIENT_ENABLE | TFO_SERVER_ENABLE;/' "$f"
+        echo "✅ softpyscho extras applied"
+        echo "::endgroup::"
+
     - name: Add RUST build configs
       shell: bash
       if: ${{ env.OP_RUST_BUILD == 'true' }}
@@ -2057,7 +2084,14 @@ runs:
 
         
         make LD="$COMMON_KERNEL_FOLDER/ld-wrapper" HOSTLD="$COMMON_KERNEL_FOLDER/ld-wrapper" O="$OUT" olddefconfig
-        
+
+        # softpyscho: fail loud if olddefconfig dropped any of our extras
+        want="CONFIG_LRU_GEN_ENABLED=y CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT=y CONFIG_NTFS3_FS=y CONFIG_DEFAULT_NET_SCH=\"fq\""
+        if [ "${{ env.OP_BBR3 }}" = "true" ]; then want="$want CONFIG_DEFAULT_TCP_CONG=\"bbr3\""; fi
+        for w in $want; do
+          if grep -qxF "$w" "$OUT/.config"; then echo "✅ $w"; else echo "::error::missing in .config: $w"; exit 1; fi
+        done
+
         KCFLAGS="$KCFLAGS -Wno-error -pipe ${KCFLAGS_EXTRA}"
         KCPPFLAGS="$KCPPFLAGS -DCONFIG_OPTIMIZE_INLINING"
         
